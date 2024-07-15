@@ -1,0 +1,4 @@
+.env
+files/*
+../.DS_Store
+.idea
