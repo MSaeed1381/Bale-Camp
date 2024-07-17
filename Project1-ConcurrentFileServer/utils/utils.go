@@ -43,7 +43,7 @@ func RandStringRunes(n int) string {
 	return string(b)
 }
 
-func HashFileContent(file []byte) uint64 {
+func HashFileContent(file []byte) uint64 { // TODO
 	hash := fnv.New64a()
 	_, err := hash.Write(file)
 	if err != nil {

@@ -8,7 +8,6 @@ import (
 	"math"
 	"os"
 	"path/filepath"
-	"strings"
 	"sync"
 )
 
@@ -39,22 +38,23 @@ func readChunk(offset int, chunkSize int, wg *sync.WaitGroup, file *os.File, byt
 	return true, nil
 }
 
-func writeChunk(offset int, chunk int, wg *sync.WaitGroup, file *os.File, byteArray *[]byte) (bool, error) {
+func writeChunk(offset int, chunkSize int, wg *sync.WaitGroup, file *os.File, byteArray *[]byte) (bool, error) {
 	defer wg.Done()
 	// like read from memory, i will write in memory
-	_, err := file.WriteAt((*byteArray)[offset:offset+chunk], int64(offset))
+	_, err := file.WriteAt((*byteArray)[offset:offset+chunkSize], int64(offset))
 
 	if err != nil {
-		return false, errors.New("write chunk error")
+		return false, errors.New("write chunkSize error")
 	}
 	return true, nil
 }
 
 func (f *FileHandlerImpl) UploadFile(ctx context.Context, file []byte, mimeType string) (string, error) {
 	hashValue := utils.HashFileContent(file)
+	// TODO encrypt hashvalue:encrypted.ext
+
 	filename := fmt.Sprintf("%d:%d.%s", hashValue, hashValue, utils.GetExtensionByMimeType(mimeType))
 	name := filepath.Join(BASEPATH, filename)
-	fmt.Println(name)
 	newFile, err := os.Create(name)
 	if err != nil {
 		fmt.Println(err)
@@ -68,7 +68,7 @@ func (f *FileHandlerImpl) UploadFile(ctx context.Context, file []byte, mimeType 
 		}
 	}(newFile)
 
-	const numberOfWorkers = 16
+	const numberOfWorkers = 16 // TODO
 	var workers = int(math.Min(numberOfWorkers, float64(len(file))))
 
 	chunkSize := len(file) / workers
@@ -135,6 +135,5 @@ func (f *FileHandlerImpl) DownloadFile(ctx context.Context, fileID string) ([]by
 
 	wg.Wait()
 
-	splitFileID := strings.Split(fileID, ".")
-	return byteArray, utils.GetMineTypeByExtension(splitFileID[len(splitFileID)-1]), nil
+	return byteArray, utils.GetMineTypeByExtension(filepath.Ext(fileID)[1:]), nil
 }

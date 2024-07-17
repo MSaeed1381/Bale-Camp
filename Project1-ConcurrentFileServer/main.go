@@ -3,11 +3,14 @@ package main
 import (
 	"ConcurrentFileServer/core"
 	"ConcurrentFileServer/utils"
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"io"
+	"mime/multipart"
 	"net/http"
 	"path/filepath"
+	"strconv"
 )
 
 type Error struct {
@@ -42,15 +45,39 @@ func downloadFile(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	filePath := filepath.Join("./files", fileId)
-	w.Header().Set("Content-Disposition", "attachment; filename="+filePath)
-	w.Header().Set("Content-Type", "application/octet-stream")
-	w.Header().Set("Content-Length", string(rune(len(file))))
+	var buffer bytes.Buffer
+	writer := multipart.NewWriter(&buffer)
 
-	// Send the file content to the response
-	http.ServeFile(w, r, filePath)
-	//fmt.Println(file)
-	//w.Write(file)
+	part, err := writer.CreateFormFile("file", fileId)
+
+	if _, err := part.Write(file); err != nil {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusInternalServerError)
+		marshaled, _ := json.Marshal(Error{err.Error()})
+		w.Write(marshaled)
+		return
+	}
+
+	if err := writer.Close(); err != nil {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusInternalServerError)
+		marshaled, _ := json.Marshal(Error{err.Error()})
+		w.Write(marshaled)
+		return
+	}
+
+	w.Header().Set("Content-Type", writer.FormDataContentType())
+	w.Header().Set("Content-Length", strconv.Itoa(buffer.Len()))
+	w.WriteHeader(http.StatusOK)
+
+	if _, err := w.Write(buffer.Bytes()); err != nil {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusInternalServerError)
+		marshaled, _ := json.Marshal(Error{err.Error()})
+		w.Write(marshaled)
+		return
+	}
+
 }
 
 func uploadFile(w http.ResponseWriter, r *http.Request) {
@@ -64,6 +91,7 @@ func uploadFile(w http.ResponseWriter, r *http.Request) {
 		w.Write(marshaled)
 		return
 	}
+
 	extension := filepath.Ext(fileHeader.Filename)[1:]
 
 	fileData, err := io.ReadAll(file)
@@ -106,5 +134,4 @@ func main() {
 	if err := http.ListenAndServe(":8080", mux); err != nil {
 		fmt.Println("Server error:", err)
 	}
-
 }

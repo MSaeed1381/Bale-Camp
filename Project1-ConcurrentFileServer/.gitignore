@@ -1,4 +1,7 @@
 .env
 files/*
+.DS_Store
 ../.DS_Store
 .idea
+../HW1/.idea
+../HW2/.idea
