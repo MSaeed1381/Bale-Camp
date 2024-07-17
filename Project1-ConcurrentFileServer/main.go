@@ -119,7 +119,10 @@ func uploadFile(w http.ResponseWriter, r *http.Request) {
 func hello(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	jsonResponse, _ := json.Marshal(Success{Message: "Welcome to Upload/Download Server"})
-	w.Write(jsonResponse)
+	_, err := w.Write(jsonResponse)
+	if err != nil {
+		return
+	}
 }
 
 func main() {

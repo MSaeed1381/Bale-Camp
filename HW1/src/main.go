@@ -28,8 +28,7 @@ func Solution(d time.Duration, message string, ch ...chan string) (numberOfAcces
 	wg.Add(len(ch)) // start len(ch) (number of channels) goroutines
 
 	for _, c := range ch {
-		channel := c // variable shadow
-		go func() {
+		go func(channel chan string) {
 			defer wg.Done()
 			select {
 			case channel <- message: // every goroutine write in a channel
@@ -38,7 +37,7 @@ func Solution(d time.Duration, message string, ch ...chan string) (numberOfAcces
 			case <-time.After(d * time.Second): // timeout
 				return
 			}
-		}()
+		}(c) // variable shadow
 	}
 
 	wg.Wait()
