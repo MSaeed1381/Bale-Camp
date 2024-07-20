@@ -36,17 +36,17 @@ type SendMessage struct {
 
 func ReadSendMessageRequest(fileName string) (*SendMessage, error) {
 	// read file as byte array
-	smByteResult, readFileErr := os.ReadFile(fileName)
-	if readFileErr != nil {
-		fmt.Printf("Unable to read JSON file due to %s\n", readFileErr)
+	smByteResult, err := os.ReadFile(fileName)
+	if err != nil {
+		fmt.Printf("Unable to read JSON file due to %s\n", err)
 		return nil, errors.New("unable to read JSON file")
 	}
 
 	// unmarshal json as SendMessage Structure
 	var sm *SendMessage
-	unmarshalError := json.Unmarshal(smByteResult, &sm)
-	if unmarshalError != nil {
-		fmt.Printf("Unable to marshal SendMessage JSON due to %s\n", unmarshalError)
+
+	if err := json.Unmarshal(smByteResult, &sm); err != nil {
+		fmt.Printf("Unable to marshal SendMessage JSON due to %s\n", err)
 		return nil, errors.New("unable to marshal SendMessage JSON")
 	}
 
@@ -64,9 +64,9 @@ func ReadSendMessageRequest(fileName string) (*SendMessage, error) {
 
 	var rm *ReplyMarkup
 	rmByteArr, _ := json.Marshal(sm.ReplyMarkup) // ignore replyMarkup marshal error due to Marshaling SendMessage
-	unmarshalErr := json.Unmarshal(rmByteArr, &rm)
-	if unmarshalErr != nil {
-		return nil, unmarshalErr
+
+	if err := json.Unmarshal(rmByteArr, &rm); err != nil {
+		return nil, err
 	}
 
 	sm.ReplyMarkup = *rm
