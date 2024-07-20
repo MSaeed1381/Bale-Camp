@@ -13,7 +13,7 @@ import (
 )
 
 // BASEPATH folder for downloading and uploading files
-const BASEPATH = "../files"
+const BASEPATH = "./files"
 
 type FileHandler interface {
 	UploadFile(ctx context.Context, file []byte, mimeType string) (string, error)
@@ -49,7 +49,11 @@ func writeChunk(offset int, chunkSize int, wg *sync.WaitGroup, file *os.File, by
 }
 
 func (f *FileHandlerImpl) UploadFile(ctx context.Context, file []byte, mimeType string) (string, error) {
-	hashValue := utils.HashFileContent(file)
+	hashValue, err := utils.HashFileContent(file)
+	if err != nil {
+		return "", err
+	}
+
 	encryptedHashValue, err := utils.Encrypt(strconv.FormatUint(hashValue, 10))
 	if err != nil {
 		return "", err

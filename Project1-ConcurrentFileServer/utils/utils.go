@@ -50,13 +50,13 @@ func RandStringRunes(n int) string {
 	return string(b)
 }
 
-func HashFileContent(file []byte) uint64 { // TODO
+func HashFileContent(file []byte) (uint64, error) {
 	hash := fnv.New64a()
 	_, err := hash.Write(file)
 	if err != nil {
-		return 0
+		return 0, errors.New("can't hash file")
 	}
-	return hash.Sum64()
+	return hash.Sum64(), nil
 }
 
 func Encrypt(plaintext string) (string, error) {
