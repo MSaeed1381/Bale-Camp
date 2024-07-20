@@ -8,6 +8,7 @@ import (
 	"math"
 	"os"
 	"path/filepath"
+	"strconv"
 	"sync"
 )
 
@@ -27,23 +28,21 @@ func NewFileHandlerImpl() FileHandler {
 }
 
 // function to read a chunk of data from file and copy it to shared memory
+// copy from file from offset with length chunkSize to byte array (offset:offset+chunkSize) that is isolate form other goroutines
+// wrapping error
 func readChunk(offset int, chunkSize int, wg *sync.WaitGroup, file *os.File, byteArray *[]byte) (bool, error) {
 	defer wg.Done()
-	// copy from file from offset with length chunkSize to byte array (offset:offset+chunkSize) that is isolate form other goroutines
-	_, err := file.ReadAt((*byteArray)[offset:offset+chunkSize], int64(offset))
-
-	if err != nil {
+	if _, err := file.ReadAt((*byteArray)[offset:offset+chunkSize], int64(offset)); err != nil {
 		return false, errors.New("read chunk error")
 	}
 	return true, nil
 }
 
+// like read from memory, i will write in memory
+// wrapping error
 func writeChunk(offset int, chunkSize int, wg *sync.WaitGroup, file *os.File, byteArray *[]byte) (bool, error) {
 	defer wg.Done()
-	// like read from memory, i will write in memory
-	_, err := file.WriteAt((*byteArray)[offset:offset+chunkSize], int64(offset))
-
-	if err != nil {
+	if _, err := file.WriteAt((*byteArray)[offset:offset+chunkSize], int64(offset)); err != nil {
 		return false, errors.New("write chunkSize error")
 	}
 	return true, nil
@@ -51,39 +50,47 @@ func writeChunk(offset int, chunkSize int, wg *sync.WaitGroup, file *os.File, by
 
 func (f *FileHandlerImpl) UploadFile(ctx context.Context, file []byte, mimeType string) (string, error) {
 	hashValue := utils.HashFileContent(file)
-	// TODO encrypt hashvalue:encrypted.ext
+	encryptedHashValue, err := utils.Encrypt(strconv.FormatUint(hashValue, 10))
+	if err != nil {
+		return "", err
+	}
 
-	filename := fmt.Sprintf("%d:%d.%s", hashValue, hashValue, utils.GetExtensionByMimeType(mimeType))
-	name := filepath.Join(BASEPATH, filename)
-	newFile, err := os.Create(name)
+	filename := fmt.Sprintf("%d:%s.%s", hashValue, encryptedHashValue, utils.GetExtensionByMimeType(mimeType))
+	newFile, err := os.Create(filepath.Join(BASEPATH, filename))
 	if err != nil {
 		fmt.Println(err)
 		return "", errors.New("create file error")
 	}
 
+	// close the file
 	defer func(newFile *os.File) {
-		err := newFile.Close()
-		if err != nil {
+		if err := newFile.Close(); err != nil {
 			panic("close file error")
 		}
 	}(newFile)
 
-	const numberOfWorkers = 16 // TODO
-	var workers = int(math.Min(numberOfWorkers, float64(len(file))))
-
-	chunkSize := len(file) / workers
-	reminder := len(file) % workers
+	// noWorkers goroutine for chunks and 1 for reminder work
+	var NoWorkers = int(math.Min(float64(utils.GetNoWorker()), float64(len(file))))
+	chunkSize := len(file) / NoWorkers
+	reminder := len(file) % NoWorkers
 
 	var wg sync.WaitGroup
-	wg.Add(workers + 1)
+	wg.Add(NoWorkers + 1)
 
 	offset := 0
 	temp := chunkSize
-	for i := 0; i < workers+1; i++ {
-		if i == workers {
+	for i := 0; i < NoWorkers+1; i++ {
+		if i == NoWorkers {
 			temp = reminder
 		}
-		go writeChunk(offset, temp, &wg, newFile, &file)
+
+		go func() {
+			_, err := writeChunk(offset, temp, &wg, newFile, &file)
+			if err != nil {
+				panic(err)
+			}
+		}()
+
 		offset += chunkSize
 	}
 
@@ -93,15 +100,14 @@ func (f *FileHandlerImpl) UploadFile(ctx context.Context, file []byte, mimeType 
 
 func (f *FileHandlerImpl) DownloadFile(ctx context.Context, fileID string) ([]byte, string, error) {
 	filePath := filepath.Join(BASEPATH, fileID)
-	file, openFileErr := os.Open(filePath)
-	if openFileErr != nil {
+	file, err := os.Open(filePath)
+	if err != nil {
 		return nil, "", errors.New("open file fail")
 	}
 
-	// wrap error
+	// wrap error (close the file)
 	defer func(file *os.File) {
-		err := file.Close()
-		if err != nil {
+		if err := file.Close(); err != nil {
 			panic("close file error")
 		}
 	}(file)
@@ -114,23 +120,29 @@ func (f *FileHandlerImpl) DownloadFile(ctx context.Context, fileID string) ([]by
 	fileLength := int(stat.Size())
 	byteArray := make([]byte, fileLength) // result
 
-	const numberOfWorkers = 16
-	var workers = int(math.Min(numberOfWorkers, float64(fileLength)))
+	var NoWorkers = int(math.Min(float64(utils.GetNoWorker()), float64(fileLength)))
 
-	chunks := fileLength / workers
-	reminder := fileLength % workers
+	chunkSize := fileLength / NoWorkers
+	reminder := fileLength % NoWorkers
 
 	var wg sync.WaitGroup
-	wg.Add(workers + 1)
+	wg.Add(NoWorkers + 1)
 
 	offset := 0
-	chunkSize := chunks
-	for i := 0; i < workers+1; i++ {
-		if i == workers {
-			chunkSize = reminder
+	temp := chunkSize
+	for i := 0; i < NoWorkers+1; i++ {
+		if i == NoWorkers {
+			temp = reminder
 		}
-		go readChunk(offset, chunkSize, &wg, file, &byteArray)
-		offset += chunks
+
+		go func() {
+			_, err := readChunk(offset, temp, &wg, file, &byteArray)
+			if err != nil {
+				panic(err)
+			}
+		}()
+
+		offset += chunkSize
 	}
 
 	wg.Wait()
