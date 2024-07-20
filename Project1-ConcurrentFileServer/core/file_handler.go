@@ -13,7 +13,7 @@ import (
 )
 
 // BASEPATH folder for downloading and uploading files
-const BASEPATH = "./files"
+const BASEPATH = "../files"
 
 type FileHandler interface {
 	UploadFile(ctx context.Context, file []byte, mimeType string) (string, error)
@@ -30,22 +30,22 @@ func NewFileHandlerImpl() FileHandler {
 // function to read a chunk of data from file and copy it to shared memory
 // copy from file from offset with length chunkSize to byte array (offset:offset+chunkSize) that is isolate form other goroutines
 // wrapping error
-func readChunk(offset int, chunkSize int, wg *sync.WaitGroup, file *os.File, byteArray *[]byte) (bool, error) {
+func readChunk(offset int, chunkSize int, wg *sync.WaitGroup, file *os.File, byteArray *[]byte) error {
 	defer wg.Done()
 	if _, err := file.ReadAt((*byteArray)[offset:offset+chunkSize], int64(offset)); err != nil {
-		return false, errors.New("read chunk error")
+		return errors.New("read chunk error")
 	}
-	return true, nil
+	return nil
 }
 
 // like read from memory, i will write in memory
 // wrapping error
-func writeChunk(offset int, chunkSize int, wg *sync.WaitGroup, file *os.File, byteArray *[]byte) (bool, error) {
+func writeChunk(offset int, chunkSize int, wg *sync.WaitGroup, file *os.File, byteArray *[]byte) error {
 	defer wg.Done()
 	if _, err := file.WriteAt((*byteArray)[offset:offset+chunkSize], int64(offset)); err != nil {
-		return false, errors.New("write chunkSize error")
+		return errors.New("write chunkSize error")
 	}
-	return true, nil
+	return nil
 }
 
 func (f *FileHandlerImpl) UploadFile(ctx context.Context, file []byte, mimeType string) (string, error) {
@@ -58,7 +58,6 @@ func (f *FileHandlerImpl) UploadFile(ctx context.Context, file []byte, mimeType 
 	filename := fmt.Sprintf("%d:%s.%s", hashValue, encryptedHashValue, utils.GetExtensionByMimeType(mimeType))
 	newFile, err := os.Create(filepath.Join(BASEPATH, filename))
 	if err != nil {
-		fmt.Println(err)
 		return "", errors.New("create file error")
 	}
 
@@ -71,25 +70,27 @@ func (f *FileHandlerImpl) UploadFile(ctx context.Context, file []byte, mimeType 
 
 	// noWorkers goroutine for chunks and 1 for reminder work
 	var NoWorkers = int(math.Min(float64(utils.GetNoWorker()), float64(len(file))))
+
 	chunkSize := len(file) / NoWorkers
 	reminder := len(file) % NoWorkers
 
 	var wg sync.WaitGroup
-	wg.Add(NoWorkers + 1)
+	wg.Add(NoWorkers)
 
 	offset := 0
 	temp := chunkSize
 	for i := 0; i < NoWorkers+1; i++ {
 		if i == NoWorkers {
 			temp = reminder
+			if temp == 0 {
+				break
+			}
+			wg.Add(1)
 		}
 
-		go func() {
-			_, err := writeChunk(offset, temp, &wg, newFile, &file)
-			if err != nil {
-				panic(err)
-			}
-		}()
+		if err := writeChunk(offset, temp, &wg, newFile, &file); err != nil {
+			return "", err
+		}
 
 		offset += chunkSize
 	}
@@ -126,21 +127,22 @@ func (f *FileHandlerImpl) DownloadFile(ctx context.Context, fileID string) ([]by
 	reminder := fileLength % NoWorkers
 
 	var wg sync.WaitGroup
-	wg.Add(NoWorkers + 1)
+	wg.Add(NoWorkers)
 
 	offset := 0
 	temp := chunkSize
 	for i := 0; i < NoWorkers+1; i++ {
 		if i == NoWorkers {
 			temp = reminder
+			if temp == 0 {
+				break
+			}
+			wg.Add(1)
 		}
 
-		go func() {
-			_, err := readChunk(offset, temp, &wg, file, &byteArray)
-			if err != nil {
-				panic(err)
-			}
-		}()
+		if err := readChunk(offset, temp, &wg, file, &byteArray); err != nil {
+			return nil, "", err
+		}
 
 		offset += chunkSize
 	}
