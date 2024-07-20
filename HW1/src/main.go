@@ -22,8 +22,12 @@ func (c *Counter) Value() int {
 	return c.value
 }
 
+func NewCounter() *Counter {
+	return &Counter{mu: sync.Mutex{}}
+}
+
 func Solution(d time.Duration, message string, ch ...chan string) (numberOfAccesses int) {
-	counter := &Counter{} // safe concurrent counter
+	counter := NewCounter() // safe concurrent counter
 	wg := new(sync.WaitGroup)
 	wg.Add(len(ch)) // start len(ch) (number of channels) goroutines
 
