@@ -28,7 +28,7 @@ func NewFileHandlerImpl() FileHandler {
 }
 
 // function to read a chunk of data from file and copy it to shared memory
-// copy from file from offset with length chunkSize to byte array (offset:offset+chunkSize) that is isolate form other goroutines
+// copy from file from offset with length chunkSize to byte array (offset:offset+chunkSize) that is isolating form other goroutines
 // wrapping error
 func readChunk(offset int, chunkSize int, wg *sync.WaitGroup, file *os.File, byteArray *[]byte) error {
 	defer wg.Done()
@@ -38,7 +38,7 @@ func readChunk(offset int, chunkSize int, wg *sync.WaitGroup, file *os.File, byt
 	return nil
 }
 
-// like read from memory, i will write in memory
+// like read from memory will write in memory
 // wrapping error
 func writeChunk(offset int, chunkSize int, wg *sync.WaitGroup, file *os.File, byteArray *[]byte) error {
 	defer wg.Done()
