@@ -36,7 +36,7 @@ func ValidateUsername(username string) bool {
 
 func ValidateFileId(fileId string) error {
 	if len(fileId) == 0 {
-		return errors.New("file id is empty")
+		return errors.New("file-id is empty")
 	}
 	requestURL := fmt.Sprintf("http://127.0.0.1:8080/existsFile/%s", fileId)
 	res, err := http.Get(requestURL)
@@ -46,7 +46,6 @@ func ValidateFileId(fileId string) error {
 	if res.StatusCode != 200 {
 		return errors.New("invalid file-id")
 	}
-
 	return nil
 }
 
@@ -58,7 +57,7 @@ const (
 	FILE  ContentType = 2
 )
 
-func GetContentType(content *messenger.Chat_Message_Content) (contentType ContentType, str string) {
+func GetContentType(content *messenger.Chat_Message_Content) (contentType ContentType, contentStr string) {
 	switch v := content.GetContent().(type) {
 	case *messenger.Chat_Message_Content_Text:
 		return TEXT, v.Text

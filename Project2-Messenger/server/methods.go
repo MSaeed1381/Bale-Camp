@@ -3,7 +3,6 @@ package server
 import (
 	"Messenger/data"
 	"Messenger/messenger"
-	"Messenger/utils"
 	"context"
 	"fmt"
 	"google.golang.org/grpc/codes"
@@ -14,23 +13,11 @@ import (
 )
 
 func (s MessengerServer) AddUser(c context.Context, r *messenger.AddUserRequest) (*messenger.AddUserResponse, error) {
-	// check uniqueness
-	if _, err := s.data.GetUserIdByUsername(r.GetUsername()); err == nil {
-		return nil, status.Error(codes.AlreadyExists, "invalid username")
-	}
-
-	// validate username
-	if !utils.ValidateUsername(r.GetUsername()) {
-		return nil, status.Error(codes.InvalidArgument, "invalid username")
-	}
-
-	// validate profile_id
-	err := utils.ValidateFileId(r.GetFileId())
+	user, err := data.NewUser(r.GetUsername(), r.GetFileId())
 	if err != nil {
-		return nil, err
+		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	user := data.NewUser(r.GetUsername(), r.GetFileId())
 	return &messenger.AddUserResponse{UserId: user.GetUserId()}, nil
 }
 
