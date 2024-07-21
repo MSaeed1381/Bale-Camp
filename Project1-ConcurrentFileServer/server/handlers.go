@@ -50,6 +50,15 @@ func (server *Server) DownloadFile(w http.ResponseWriter, r *http.Request) {
 }
 
 func (server *Server) UploadFile(w http.ResponseWriter, r *http.Request) {
+	if r.Header.Get("Content-Type") == "application/x-www-form-urlencoded" {
+		server.UploadURLFile(w, r)
+		return
+	}
+
+	server.UploadFormDataFile(w, r)
+}
+
+func (server *Server) UploadFormDataFile(w http.ResponseWriter, r *http.Request) {
 	file, fileHeader, err := r.FormFile("file")
 	if err != nil {
 		JSONResponse(w, http.StatusBadRequest, Error{err.Error()})
@@ -58,6 +67,35 @@ func (server *Server) UploadFile(w http.ResponseWriter, r *http.Request) {
 
 	extension := filepath.Ext(fileHeader.Filename)[1:]
 	fileData, err := io.ReadAll(file)
+	if err != nil {
+		JSONResponse(w, http.StatusBadRequest, Error{err.Error()})
+		return
+	}
+
+	fileId, err := server.fileHandler.UploadFile(r.Context(), fileData, utils.GetMineTypeByExtension(extension))
+	if err != nil {
+		JSONResponse(w, http.StatusBadRequest, Error{err.Error()})
+		return
+	}
+
+	JSONResponse(w, http.StatusOK, PostFile{fileId})
+}
+
+func (server *Server) UploadURLFile(w http.ResponseWriter, r *http.Request) {
+	url := r.PostFormValue("file")
+	if len(url) == 0 {
+		JSONResponse(w, http.StatusBadRequest, Error{"url is empty"})
+	}
+
+	response, err := http.Get(url)
+	if err != nil {
+		JSONResponse(w, http.StatusBadRequest, Error{err.Error()})
+		return
+	}
+	defer response.Body.Close()
+
+	extension := filepath.Ext(url)[1:]
+	fileData, err := io.ReadAll(response.Body)
 	if err != nil {
 		JSONResponse(w, http.StatusBadRequest, Error{err.Error()})
 		return
