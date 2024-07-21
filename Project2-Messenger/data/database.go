@@ -17,6 +17,7 @@ type Database struct {
 	ChatsCounter    int64
 }
 
+// TODO wrap function
 var dbInstance *Database
 
 func GetDatabaseInstance() *Database {
@@ -38,17 +39,17 @@ func GetDatabaseInstance() *Database {
 	return dbInstance
 }
 
-func (db *Database) GetUserId() int64 {
+func (db *Database) GenerateUserId() int64 {
 	db.UserIdsCounter++
 	return db.UserIdsCounter
 }
 
-func (db *Database) GetMessageId() int64 {
+func (db *Database) GenerateMessageId() int64 {
 	db.MessagesCounter++
 	return db.MessagesCounter
 }
 
-func (db *Database) GetChatId() int64 {
+func (db *Database) GenerateChatId() int64 {
 	db.ChatsCounter++
 	return db.ChatsCounter
 }
@@ -67,4 +68,30 @@ func (db *Database) GetUser(userId int64) (*User, error) {
 		return nil, errors.New("user not found")
 	}
 	return usr, nil
+}
+
+func (db *Database) GetUserIdByUsername(username string) (int64, error) {
+	userId, ok := db.UsernameToId[username]
+	if !ok {
+		return 0, errors.New("invalid username")
+	}
+
+	return userId, nil
+}
+
+func (db *Database) GetChatIdByCode(chatCode string) (int64, error) {
+	chatId, ok := db.ChatCodeToId[chatCode]
+	if !ok {
+		return 0, errors.New("chat not found")
+	}
+	return chatId, nil
+}
+
+func (db *Database) GetChat(chatCode string) (*messenger.Chat, error) {
+	chat, ok := db.Chats[chatCode]
+	if !ok {
+		return nil, errors.New("chat not found")
+	}
+
+	return chat, nil
 }

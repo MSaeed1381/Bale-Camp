@@ -5,16 +5,16 @@ import (
 	"Messenger/messenger"
 	"Messenger/utils"
 	"context"
-	"fmt"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/timestamppb"
+	"sort"
 	"time"
 )
 
 func (s MessengerServer) AddUser(c context.Context, r *messenger.AddUserRequest) (*messenger.AddUserResponse, error) {
 	// check uniqueness
-	if _, ok := s.data.UsernameToId[r.GetUsername()]; ok {
+	if _, err := s.data.GetUserIdByUsername(r.GetUsername()); err == nil {
 		return nil, status.Error(codes.AlreadyExists, "invalid username")
 	}
 
@@ -81,13 +81,25 @@ func (s MessengerServer) GetUserMessages(c context.Context, r *messenger.GetUser
 		return nil, status.Error(codes.NotFound, "user does not exist")
 	}
 
-	fmt.Println(user)
-	fmt.Println(user.Chats)
-	fmt.Println(data.GetDatabaseInstance().Chats[user.Chats[0]])
-
 	chats := make([]*messenger.Chat, 0)
-	for _, chatId := range user.Chats {
-		chats = append(chats, data.GetDatabaseInstance().Chats[chatId])
+	for _, chatCode := range user.Chats {
+		chat, err := s.data.GetChat(chatCode)
+		if err != nil {
+			return nil, err
+		}
+		chats = append(chats, chat)
+	}
+
+	for _, chat := range chats {
+		sort.Slice(chat.Messages, func(i, j int) bool {
+			if chat.Messages[i].Timestamp.GetSeconds() < chat.Messages[j].Timestamp.GetSeconds() {
+				return true
+			} else if chat.Messages[i].Timestamp.Seconds == chat.Messages[j].Timestamp.Seconds &&
+				chat.Messages[i].Timestamp.GetNanos() == chat.Messages[j].Timestamp.GetNanos() {
+				return true
+			}
+			return false
+		})
 	}
 
 	return &messenger.GetUserMessagesResponse{
