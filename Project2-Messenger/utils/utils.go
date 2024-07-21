@@ -46,6 +46,7 @@ func ValidateFileId(fileId string) error {
 	if res.StatusCode != 200 {
 		return errors.New("invalid file-id")
 	}
+
 	return nil
 }
 
@@ -57,7 +58,7 @@ const (
 	FILE  ContentType = 2
 )
 
-func GetContentType(content *messenger.Chat_Message_Content) (contentType ContentType, contentStr string) {
+func GetContentType(content *messenger.Chat_Message_Content) (contentType ContentType, str string) {
 	switch v := content.GetContent().(type) {
 	case *messenger.Chat_Message_Content_Text:
 		return TEXT, v.Text

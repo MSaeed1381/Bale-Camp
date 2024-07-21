@@ -3,6 +3,8 @@ package data
 import (
 	"Messenger/messenger"
 	"errors"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 type Database struct {
@@ -94,4 +96,27 @@ func (db *Database) GetChat(chatCode string) (*messenger.Chat, error) {
 	}
 
 	return chat, nil
+}
+
+func GetUserID(sender interface{}) (int64, error) {
+	db := GetDatabaseInstance()
+
+	switch sender := sender.(type) {
+	case *messenger.SendMessageRequest_SenderId:
+		return sender.SenderId, nil
+	case *messenger.SendMessageRequest_SenderUsername:
+		if id, err := db.GetUserIdByUsername(sender.SenderUsername); err == nil {
+			return id, nil
+		}
+		return 0, status.Error(codes.NotFound, "sender user does not exist")
+	case *messenger.SendMessageRequest_ReceiverId:
+		return sender.ReceiverId, nil
+	case *messenger.SendMessageRequest_ReceiverUsername:
+		if id, err := db.GetUserIdByUsername(sender.ReceiverUsername); err == nil {
+			return id, nil
+		}
+		return 0, status.Error(codes.NotFound, "receiver user does not exist")
+	default:
+		return 0, status.Error(codes.InvalidArgument, "unknown sender/receiver type")
+	}
 }

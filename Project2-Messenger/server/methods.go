@@ -4,7 +4,6 @@ import (
 	"Messenger/data"
 	"Messenger/messenger"
 	"context"
-	"fmt"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -22,42 +21,34 @@ func (s MessengerServer) AddUser(c context.Context, r *messenger.AddUserRequest)
 }
 
 func (s MessengerServer) SendMessage(c context.Context, r *messenger.SendMessageRequest) (*messenger.SendMessageResponse, error) {
-	var senderId int64 = 0
-	switch (r.GetSender()).(type) {
-	case *messenger.SendMessageRequest_SenderId:
-		senderId = r.GetSenderId()
-	case *messenger.SendMessageRequest_SenderUsername:
-		senderId = s.data.UsernameToId[r.GetSenderUsername()]
+	db := data.GetDatabaseInstance()
+
+	senderId, err := data.GetUserID(r.GetSender())
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	_, err := data.GetDatabaseInstance().GetUser(senderId)
+	receiverId, err := data.GetUserID(r.GetReceiver())
 	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	if _, err = db.GetUser(senderId); err != nil {
 		return nil, status.Error(codes.NotFound, "sender user does not exist")
 	}
 
-	var receiverId int64 = 0
-	switch (r.GetReceiver()).(type) {
-	case *messenger.SendMessageRequest_ReceiverId:
-		receiverId = r.GetReceiverId()
-	case *messenger.SendMessageRequest_ReceiverUsername:
-		receiverId = s.data.UsernameToId[r.GetReceiverUsername()]
-	}
-
-	_, err = data.GetDatabaseInstance().GetUser(receiverId)
-	if err != nil {
+	if _, err = db.GetUser(receiverId); err != nil {
 		return nil, status.Error(codes.NotFound, "receiver user does not exist")
 	}
-
-	r.GetContent().GetContent()
 
 	message, err := data.NewMessage(r.GetContent(), senderId, receiverId, timestamppb.New(time.Now()))
 	if err != nil {
 		return nil, err
 	}
 
-	fmt.Println(message)
 	return &messenger.SendMessageResponse{MessageId: message.MessageId}, nil
 }
+
 func (s MessengerServer) FetchMessage(c context.Context, r *messenger.FetchMessageRequest) (*messenger.FetchMessageResponse, error) {
 	message, err := s.data.GetMessage(r.GetMessageId())
 	if err != nil {
@@ -82,6 +73,7 @@ func (s MessengerServer) GetUserMessages(c context.Context, r *messenger.GetUser
 		chats = append(chats, chat)
 	}
 
+	// TODO sorting with id
 	for _, chat := range chats {
 		sort.Slice(chat.Messages, func(i, j int) bool {
 			if chat.Messages[i].Timestamp.GetSeconds() < chat.Messages[j].Timestamp.GetSeconds() {
