@@ -4,7 +4,8 @@ import "Messenger/server"
 
 func main() {
 	serv := server.NewMessengerServer()
-	if err := serv.Serve("127.0.0.1:8000"); err != nil {
+	const ADDRESS = "127.0.0.1:8000"
+	if err := serv.Serve(ADDRESS); err != nil {
 		return
 	}
 }

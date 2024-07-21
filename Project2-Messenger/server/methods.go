@@ -5,6 +5,7 @@ import (
 	"Messenger/messenger"
 	"Messenger/utils"
 	"context"
+	"fmt"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -24,12 +25,9 @@ func (s MessengerServer) AddUser(c context.Context, r *messenger.AddUserRequest)
 	}
 
 	// validate profile_id
-	ok, err := utils.ValidateFileId(r.GetFileId())
+	err := utils.ValidateFileId(r.GetFileId())
 	if err != nil {
 		return nil, err
-	}
-	if !ok {
-		return nil, status.Error(codes.InvalidArgument, "invalid file_id")
 	}
 
 	user := data.NewUser(r.GetUsername(), r.GetFileId())
@@ -45,7 +43,8 @@ func (s MessengerServer) SendMessage(c context.Context, r *messenger.SendMessage
 		senderId = s.data.UsernameToId[r.GetSenderUsername()]
 	}
 
-	if senderId == 0 {
+	_, err := data.GetDatabaseInstance().GetUser(senderId)
+	if err != nil {
 		return nil, status.Error(codes.NotFound, "sender user does not exist")
 	}
 
@@ -57,13 +56,19 @@ func (s MessengerServer) SendMessage(c context.Context, r *messenger.SendMessage
 		receiverId = s.data.UsernameToId[r.GetReceiverUsername()]
 	}
 
-	if receiverId == 0 {
+	_, err = data.GetDatabaseInstance().GetUser(receiverId)
+	if err != nil {
 		return nil, status.Error(codes.NotFound, "receiver user does not exist")
 	}
 
 	r.GetContent().GetContent()
 
-	message, _ := data.NewMessage(r.GetContent(), senderId, receiverId, timestamppb.New(time.Now()))
+	message, err := data.NewMessage(r.GetContent(), senderId, receiverId, timestamppb.New(time.Now()))
+	if err != nil {
+		return nil, err
+	}
+
+	fmt.Println(message)
 	return &messenger.SendMessageResponse{MessageId: message.MessageId}, nil
 }
 func (s MessengerServer) FetchMessage(c context.Context, r *messenger.FetchMessageRequest) (*messenger.FetchMessageResponse, error) {

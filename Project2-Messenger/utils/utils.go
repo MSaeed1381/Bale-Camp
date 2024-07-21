@@ -34,30 +34,38 @@ func ValidateUsername(username string) bool {
 	return true
 }
 
-func ValidateFileId(fileId string) (bool, error) {
-	if len(fileId) == 0 { // TODO other validation
-		return false, nil
+func ValidateFileId(fileId string) error {
+	if len(fileId) == 0 {
+		return errors.New("file id is empty")
 	}
-
 	requestURL := fmt.Sprintf("http://127.0.0.1:8080/existsFile/%s", fileId)
 	res, err := http.Get(requestURL)
 	if err != nil {
-		return false, errors.New("file Server doesn't up")
+		return errors.New("file Server doesn't up")
 	}
 	if res.StatusCode != 200 {
-		return false, nil
+		return errors.New("invalid file-id")
 	}
-	return true, nil
+
+	return nil
 }
 
-func ContentType(content *messenger.Chat_Message_Content) (contentType string, str string) {
+type ContentType int
+
+const (
+	TEXT  ContentType = 0
+	IMAGE ContentType = 1
+	FILE  ContentType = 2
+)
+
+func GetContentType(content *messenger.Chat_Message_Content) (contentType ContentType, str string) {
 	switch v := content.GetContent().(type) {
 	case *messenger.Chat_Message_Content_Text:
-		return "text", v.Text
+		return TEXT, v.Text
 	case *messenger.Chat_Message_Content_Image:
-		return "image", v.Image
+		return IMAGE, v.Image
 	case *messenger.Chat_Message_Content_File:
-		return "file", v.File
+		return FILE, v.File
 	}
-	return "", ""
+	return 0, ""
 }

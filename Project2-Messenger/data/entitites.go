@@ -42,13 +42,14 @@ func (u *User) GetChats() []string {
 
 func NewMessage(content *messenger.Chat_Message_Content, senderId int64, receiverId int64, timestamp *timestamppb.Timestamp) (*messenger.Chat_Message, error) {
 	db := GetDatabaseInstance()
-	contentType, str := utils.ContentType(content)
-	if contentType == "file" || contentType == "image" {
-		ok, err := utils.ValidateFileId(str)
-		if !ok {
+	contentType, str := utils.GetContentType(content)
+	if contentType == 1 || contentType == 2 { // file or image
+		err := utils.ValidateFileId(str)
+		if err != nil {
 			return nil, err
 		}
 	}
+
 	m := &messenger.Chat_Message{
 		MessageId:  db.GenerateMessageId(),
 		Content:    content,
