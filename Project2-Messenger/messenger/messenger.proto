@@ -1,0 +1,81 @@
+syntax="proto3";
+option go_package="./Users/saeedzare/bale-camp/Project2-Messenger/messenger";
+
+package messenger;
+
+import "google/protobuf/timestamp.proto";
+
+
+service messenger {
+  rpc AddUser(AddUserRequest) returns (AddUserResponse){};
+  rpc SendMessage(SendMessageRequest) returns (SendMessageResponse){};
+  rpc FetchMessage(FetchMessageRequest) returns (FetchMessageResponse){};
+  rpc GetUserMessages(GetUserMessagesRequest) returns (GetUserMessagesResponse){};
+}
+
+message Chat {
+  int64 chat_id = 1;
+  int64 user1 = 2;
+  int64 user2 = 3;
+  repeated Message messages = 4;
+
+  message Message {
+    int64 message_id = 1;
+    Content content = 2;
+    int64 sender_id = 3;
+    int64 receiver_id = 4;
+    google.protobuf.Timestamp timestamp = 5;
+
+    message Content {
+      oneof content {
+        string text = 1;
+        string file = 2;
+        string image = 3;
+      }
+    }
+  }
+}
+
+message AddUserRequest {
+  string username = 1;
+  string file_id = 2;
+}
+
+message AddUserResponse {
+  int64 user_id = 1;
+}
+
+message SendMessageRequest {
+  oneof sender {
+    int64 sender_id = 1;
+    string sender_username = 2;
+  }
+
+  oneof receiver {
+    int64 receiver_id = 3;
+    string receiver_username = 4;
+  }
+
+  Chat.Message.Content content = 5;
+}
+
+message SendMessageResponse {
+  int64 message_id = 1;
+}
+
+message FetchMessageRequest {
+  int64 message_id = 1;
+}
+
+message FetchMessageResponse {
+  Chat.Message message = 1;
+}
+
+
+message GetUserMessagesRequest {
+  int64 user_id = 1;
+}
+
+message GetUserMessagesResponse {
+  repeated Chat chats = 1;
+}
