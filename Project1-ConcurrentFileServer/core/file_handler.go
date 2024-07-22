@@ -12,6 +12,11 @@ import (
 	"sync"
 )
 
+// TODO go
+// buffer
+// getMimeType
+// handle HW2 marshal and unmarshal
+
 // BASEPATH folder for downloading and uploading files
 const BASEPATH = "./files"
 
@@ -31,7 +36,7 @@ func NewFileHandlerImpl() FileHandler {
 // copy from file from offset with length chunkSize to byte array (offset:offset+chunkSize) that is isolating form other goroutines
 // wrapping error
 func readChunk(offset int, chunkSize int, wg *sync.WaitGroup, file *os.File, byteArray *[]byte) error {
-	defer wg.Done()
+	defer wg.Done() // TODO
 	if _, err := file.ReadAt((*byteArray)[offset:offset+chunkSize], int64(offset)); err != nil {
 		return errors.New("read chunk error")
 	}
