@@ -1,0 +1,50 @@
+version: "3"
+
+services:
+  file_server:
+    build:
+      context: ../Project1-ConcurrentFileServer/
+      dockerfile: Dockerfile
+    container_name: file_server
+
+
+    environment:
+      - SECRET_KEY=${SECRET_KEY}
+      - NO_WORKERS=${NO_WORKERS}
+
+    volumes:
+      - /Users/saeedzare/docker_data/filesever/data:/app/files
+
+    ports:
+      - "8080:8080"
+
+    restart: on-failure
+
+    networks:
+      - my-net
+
+  messenger:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: messenger
+
+    ports:
+      - "8000:8000"
+
+    restart: on-failure
+    depends_on:
+      - file_server
+
+    networks:
+      - my-net
+
+
+volumes:
+  data:
+
+networks:
+  my-net:
+    driver: bridge
+
+

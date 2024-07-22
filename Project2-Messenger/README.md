@@ -57,3 +57,9 @@ If user with this id does not exist, the function returns an error with the mess
 ```
 user does not exist
 ```
+
+
+# Run server
+```shell
+docker compose --env-file 'YOUR_ENV_FILE' up --build
+```
