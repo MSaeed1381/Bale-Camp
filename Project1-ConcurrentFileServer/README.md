@@ -122,5 +122,4 @@ docker build -t fileserver .
 
 ### run docker
 ```shell
-docker run -p 8080:8080 -e SECRET_KEY='YOUR_SECRET_KEY' -e NO_WORKERS='YOUR_NO_WORKERS' fileserver   
-```
+docker run -p 8080:8080 -e SECRET_KEY='YOUR_SECRET_KEY' -e NO_WORKERS='YOUR_NO_WORKERS' -v YOUR_PATH:/app/files -d fileserver```
