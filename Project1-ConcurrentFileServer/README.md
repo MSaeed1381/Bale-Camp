@@ -112,3 +112,15 @@ REST APIs that you should implement are listed below:
 - Examine the writing performance with different number of goroutines and number of bytes each goroutine writes in one access.
 - Add REST APIs.
 - Complete your upload/download http server.
+
+# Run Server
+
+### build docker
+```shell
+docker build -t fileserver .
+```
+
+### run docker
+```shell
+docker run -p 8080:8080 -e SECRET_KEY='YOUR_SECRET_KEY' -e NO_WORKERS='YOUR_NO_WORKERS' fileserver   
+```
