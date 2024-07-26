@@ -1,0 +1,19 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: file-server-pod
+  labels:
+    app: file-server
+    type: file-server-pod
+spec:
+  containers:
+    - name: fileserver
+      image: msaeed1381/fileserver:latest
+      imagePullPolicy: IfNotPresent
+      ports:
+        - name: fileserver
+          containerPort: 8080
+          protocol: TCP
+  restartPolicy: Always
+
+  
