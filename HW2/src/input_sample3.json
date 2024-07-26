@@ -1,6 +1,12 @@
 {
   "chat_id" : "456",
-  "reply_markup" : ,
+  "reply_markup" : {
+    "inline_keyboard" : [
+      [
+       "saeed", "zare"
+      ]
+    ]
+  },
   "text" : "<b>quera</b> vs <b>bale</b>",
   "parse_mode" : "HTML"
 }

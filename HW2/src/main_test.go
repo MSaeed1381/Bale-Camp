@@ -10,11 +10,11 @@ func TestSendMessageSample1(t *testing.T) {
 	assert.Nil(t, err)
 	assert.NotNil(t, msg)
 	assert.EqualValues(t, "456", msg.ChatID)
-	assert.IsType(t, ReplyMarkup{}, msg.ReplyMarkup)
-	assert.IsType(t, msg.ReplyMarkup.(ReplyMarkup).InlineKeyboard, [][]InlineKeyboardButton{})
-	assert.Equal(t, 2, len(msg.ReplyMarkup.(ReplyMarkup).InlineKeyboard))
-	assert.Equal(t, 3, len(msg.ReplyMarkup.(ReplyMarkup).InlineKeyboard[0]))
-	assert.Equal(t, "bale", msg.ReplyMarkup.(ReplyMarkup).InlineKeyboard[0][1].Text)
+	assert.IsType(t, &ReplyMarkup{}, msg.ReplyMarkup)
+	assert.IsType(t, InlineKeyboardButton{}, msg.ReplyMarkup.InlineKeyboard[0][0])
+	assert.Equal(t, 2, len(msg.ReplyMarkup.InlineKeyboard))
+	assert.Equal(t, 3, len(msg.ReplyMarkup.InlineKeyboard[0]))
+	assert.Equal(t, "bale", msg.ReplyMarkup.InlineKeyboard[0][1].(InlineKeyboardButton).Text)
 	assert.Equal(t, "HTML", msg.ParseMode)
 }
 
