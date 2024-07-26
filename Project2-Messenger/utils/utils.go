@@ -38,7 +38,7 @@ func ValidateFileId(fileId string) error {
 	if len(fileId) == 0 {
 		return errors.New("file-id is empty")
 	}
-	requestURL := fmt.Sprintf("http://file_server:8080/existsFile/%s", fileId)
+	requestURL := fmt.Sprintf("http://fileserver:8080/existsFile/%s", fileId)
 	res, err := http.Get(requestURL)
 	if err != nil {
 		return errors.New("file Server doesn't up")
