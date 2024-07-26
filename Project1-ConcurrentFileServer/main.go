@@ -6,8 +6,9 @@ import (
 )
 
 func main() {
-	serv := server.NewServer()
-	if err := serv.Serve("0.0.0.0:8080"); err != nil {
+	serv := server.NewFileServer()
+	addr := "0.0.0.0:8080"
+	if err := serv.Serve(addr); err != nil {
 		fmt.Println("serve err")
 	}
 }

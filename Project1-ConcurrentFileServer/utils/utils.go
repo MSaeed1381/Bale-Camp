@@ -29,7 +29,7 @@ func GetExtensionByMimeType(mimeType string) string {
 	}
 }
 
-func GetMineTypeByExtension(extension string) string {
+func GetMimeTypeByExtension(extension string) string {
 	switch extension {
 	case "png":
 		return "image/png"

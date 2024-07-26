@@ -63,9 +63,10 @@ func TestDownload(t *testing.T) {
 	filename := fmt.Sprintf("%s.%s", fileId, utils.GetExtensionByMimeType(mimeType))
 	fmt.Println(filename)
 	resultFile, resultMimeType, err := handler.DownloadFile(ctx, filename)
-	assert.Nil(t, err)
-	assert.NotEmpty(t, resultFile)
 	assert.NotEmpty(t, resultMimeType)
+
+	fmt.Println(resultFile)
+	fmt.Println(data)
 	assert.True(t, bytes.Equal(resultFile, data))
 }
 

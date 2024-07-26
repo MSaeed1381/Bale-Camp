@@ -11,7 +11,7 @@ type FileServer interface {
 	DownloadFile(http.ResponseWriter, *http.Request)
 	UploadFile(http.ResponseWriter, *http.Request)
 	ExistsFile(http.ResponseWriter, *http.Request)
-	Serve()
+	Serve(addr string) error
 }
 
 type Server struct {
@@ -19,7 +19,7 @@ type Server struct {
 	fileHandler core.FileHandler
 }
 
-func NewServer() *Server {
+func NewFileServer() FileServer {
 	return &Server{mux: http.NewServeMux(), fileHandler: core.NewFileHandlerImpl()}
 }
 

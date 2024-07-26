@@ -12,13 +12,8 @@ import (
 	"sync"
 )
 
-// TODO go
-// buffer
-// getMimeType
-// handle HW2 marshal and unmarshal
-
 // BASEPATH folder for downloading and uploading files
-const BASEPATH = "./files"
+const BASEPATH = "../files"
 
 type FileHandler interface {
 	UploadFile(ctx context.Context, file []byte, mimeType string) (string, error)
@@ -35,22 +30,30 @@ func NewFileHandlerImpl() FileHandler {
 // function to read a chunk of data from file and copy it to shared memory
 // copy from file from offset with length chunkSize to byte array (offset:offset+chunkSize) that is isolating form other goroutines
 // wrapping error
-func readChunk(offset int, chunkSize int, wg *sync.WaitGroup, file *os.File, byteArray *[]byte) error {
-	defer wg.Done() // TODO
-	if _, err := file.ReadAt((*byteArray)[offset:offset+chunkSize], int64(offset)); err != nil {
-		return errors.New("read chunk error")
+func readChunk(ctx context.Context, offset int, chunkSize int, file *os.File, byteArray *[]byte) error {
+	select {
+	case <-ctx.Done():
+		return ctx.Err()
+	default:
+		if _, err := file.ReadAt((*byteArray)[offset:offset+chunkSize], int64(offset)); err != nil {
+			return errors.New("read chunk error")
+		}
+		return nil
 	}
-	return nil
 }
 
 // like read from memory will write in memory
 // wrapping error
-func writeChunk(offset int, chunkSize int, wg *sync.WaitGroup, file *os.File, byteArray *[]byte) error {
-	defer wg.Done()
-	if _, err := file.WriteAt((*byteArray)[offset:offset+chunkSize], int64(offset)); err != nil {
-		return errors.New("write chunkSize error")
+func writeChunk(ctx context.Context, offset int, chunkSize int, file *os.File, byteArray *[]byte) error {
+	select {
+	case <-ctx.Done():
+		return ctx.Err()
+	default:
+		if _, err := file.WriteAt((*byteArray)[offset:offset+chunkSize], int64(offset)); err != nil {
+			return errors.New("write chunkSize error")
+		}
+		return nil
 	}
-	return nil
 }
 
 func (f *FileHandlerImpl) UploadFile(ctx context.Context, file []byte, mimeType string) (string, error) {
@@ -97,9 +100,13 @@ func (f *FileHandlerImpl) UploadFile(ctx context.Context, file []byte, mimeType 
 			wg.Add(1)
 		}
 
-		if err := writeChunk(offset, temp, &wg, newFile, &file); err != nil {
-			return "", err
-		}
+		go func(offset, temp int) {
+			defer wg.Done()
+			err := writeChunk(ctx, offset, temp, newFile, &file)
+			if err != nil {
+				panic("write chunk error")
+			}
+		}(offset, temp)
 
 		offset += chunkSize
 	}
@@ -149,14 +156,18 @@ func (f *FileHandlerImpl) DownloadFile(ctx context.Context, fileID string) ([]by
 			wg.Add(1)
 		}
 
-		if err := readChunk(offset, temp, &wg, file, &byteArray); err != nil {
-			return nil, "", err
-		}
+		go func(offset, temp int) {
+			defer wg.Done()
+			err := readChunk(ctx, offset, temp, file, &byteArray)
+			if err != nil {
+				panic("read chunk error")
+			}
+		}(offset, temp)
 
 		offset += chunkSize
 	}
 
 	wg.Wait()
 
-	return byteArray, utils.GetMineTypeByExtension(filepath.Ext(fileID)[1:]), nil
+	return byteArray, utils.GetMimeTypeByExtension(filepath.Ext(fileID)[1:]), nil
 }
