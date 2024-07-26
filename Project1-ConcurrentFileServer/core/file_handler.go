@@ -13,7 +13,7 @@ import (
 )
 
 // BASEPATH folder for downloading and uploading files
-const BASEPATH = "../files"
+const BASEPATH = "./files"
 
 type FileHandler interface {
 	UploadFile(ctx context.Context, file []byte, mimeType string) (string, error)
