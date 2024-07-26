@@ -128,13 +128,14 @@ func GetSecretKey() string {
 }
 
 func GetNoWorker() int64 {
+	var defaultedWorkerValue int64 = 16
 	noWorkers, ok := GetEnv("NO_WORKERS")
 	if !ok { // defaulted value for non-production environment
-		return 16
+		return defaultedWorkerValue
 	}
 	parseInt, err := strconv.ParseInt(noWorkers, 10, 64)
 	if err != nil {
-		return 16
+		return defaultedWorkerValue
 	}
 	return parseInt
 }
