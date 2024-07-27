@@ -1,0 +1,29 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: file-server-deployment
+  labels:
+    app: file-server
+    type: file-server-deployment
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: file-server
+      type: file-server-deployment-pod
+  template:
+    metadata:
+      name: fileserver
+      labels:
+        app: file-server
+        type: file-server-deployment-pod
+    spec:
+      containers:
+        - name: fileserver
+          image: msaeed1381/fileserver:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: fileserver
+              containerPort: 8080
+              protocol: TCP
+      restartPolicy: Always

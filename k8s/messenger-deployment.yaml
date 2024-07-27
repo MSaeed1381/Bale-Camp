@@ -1,0 +1,29 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: messenger-deployment
+  labels:
+    app: messenger
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: messenger
+      type: messenger-deployment-pod
+  template:
+    metadata:
+      name: messenger-deployment-pod
+      labels:
+        app: messenger
+        type: messenger-deployment-pod
+    spec:
+      containers:
+        - name: messenger-pod
+          image: msaeed1381/messenger:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: messenger-pod
+              containerPort: 8000
+              protocol: TCP
+      restartPolicy: Always
+      

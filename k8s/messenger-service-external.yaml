@@ -5,7 +5,7 @@ metadata:
 spec:
   selector:
     app: messenger
-    type: messenger-pod
+    type: messenger-deployment-pod
   ports:
     - protocol: TCP
       port: 8000

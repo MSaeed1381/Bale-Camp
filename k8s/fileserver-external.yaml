@@ -5,7 +5,7 @@ metadata:
 spec:
   selector:
     app: file-server
-    type: file-server-pod
+    type: file-server-deployment-pod
   ports:
     - protocol: TCP
       port: 8080
